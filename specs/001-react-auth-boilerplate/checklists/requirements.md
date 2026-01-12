@@ -1,4 +1,4 @@
-# Specification Quality Checklist: React Authentication Boilerplate
+# Specification Quality Checklist: React NATS Authentication Boilerplate
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-01-12
@@ -31,7 +31,9 @@
 
 ## Notes
 
-- All checklist items pass validation
-- Specification is ready for `/speckit.clarify` or `/speckit.plan`
-- The spec assumes email/password auth as documented in the Assumptions section
-- Backend implementation is explicitly out of scope (boilerplate demonstrates patterns only)
+- Spec updated to NATS-first approach with credential file authentication (2026-01-12)
+- All user stories rewritten to reflect credential-based auth flow instead of email/password
+- Edge cases cover NATS-specific scenarios (connection drops, credential expiry, reconnection)
+- Integration dependencies clearly identify Synadia Cloud / NATS server via WebSocket
+- Success criteria include NATS-specific metrics (connection time, reconnection success)
+- Credential provisioning is explicitly out of scope (users obtain creds externally)
