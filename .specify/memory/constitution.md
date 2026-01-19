@@ -1,19 +1,17 @@
 <!--
   Sync Impact Report
   ====================
-  Version change: N/A → 1.0.0 (initial ratification)
+  Version change: 1.0.0 → 1.1.0
 
-  Added sections:
-    - Principle I: WebSocket-First Architecture
+  Modified principles:
+    - Principle I: WebSocket-First Architecture → NATS-Only Communication
+      (Expanded to emphasize NATS is the sole communication channel)
     - Principle II: Secure Credential Handling
-    - Principle III: NATS Protocol Compliance
-    - Principle IV: Browser Security Standards
-    - Principle V: Template Reusability
-    - Section: Technical Constraints
-    - Section: Development Standards
-    - Section: Governance
+      (Added explicit reference to "authenticating with NATS over WebSocket")
 
-  Removed sections: None (initial version)
+  Added sections: None
+
+  Removed sections: None
 
   Templates requiring updates:
     - .specify/templates/plan-template.md ✅ (no changes needed - generic)
@@ -27,23 +25,29 @@
 
 ## Core Principles
 
-### I. WebSocket-First Architecture
+### I. NATS-Only Communication
 
-All communication between the browser and NATS servers MUST occur via WebSocket connections.
-This template provides the foundation for NATS-native web applications.
+NATS-native web UIs communicate **exclusively** through NATS. There is no separate REST API,
+GraphQL layer, or other backend communication channel. The browser connects directly to NATS
+servers using WebSocket transport via the `@nats-io/nats.js` library.
 
 - Browser clients MUST use `@nats-io/nats.js` for WebSocket connections (NOT the deprecated `nats.ws`)
+- All application communication MUST flow through NATS subjects—no alternative HTTP/REST endpoints
 - Direct TCP connections are not available in browsers; WebSocket is the only transport
 - The UI MUST gracefully handle connection state changes (connecting, connected, reconnecting, closed)
 - Connection options MUST be configurable per deployment environment
+- Backend services (if any) MUST also communicate via NATS, enabling true end-to-end NATS messaging
 
-**Rationale**: WebSocket is the only browser-compatible transport for NATS. Using the current
-official library ensures long-term support and security updates.
+**Rationale**: A NATS-native UI derives its power from direct NATS connectivity. Using NATS as
+the sole communication layer provides consistent pub/sub semantics, eliminates protocol
+translation overhead, and enables real-time reactivity that traditional REST architectures
+cannot match.
 
 ### II. Secure Credential Handling
 
-Credentials MUST never be transmitted over the network in plain form. Authentication uses
-cryptographic challenge-response mechanisms where the browser signs server-provided nonces.
+Authenticating means authenticating with NATS over WebSocket. Credentials MUST never be
+transmitted over the network in plain form. Authentication uses cryptographic challenge-response
+mechanisms where the browser signs server-provided nonces.
 
 - Credentials MUST be stored in the browser's secure storage (IndexedDB with encryption or
   Web Crypto API-backed storage) when available
@@ -54,10 +58,12 @@ cryptographic challenge-response mechanisms where the browser signs server-provi
   - **Token**: Bearer token authentication
 - Credential material (seeds, passwords) MUST NOT appear in application logs or error messages
 - Session credentials MUST be clearable by the user on demand
+- There is no separate authentication service—authentication is handled entirely by NATS
 
 **Rationale**: Browser-based applications face unique security challenges. Signing nonces
 locally ensures credentials never leave the client, protecting against network interception
-and server-side credential leakage.
+and server-side credential leakage. By authenticating directly with NATS, we eliminate
+additional attack surfaces that traditional auth proxies would introduce.
 
 ### III. NATS Protocol Compliance
 
@@ -106,6 +112,7 @@ These constraints define the technology boundaries for implementations based on 
 
 - **NATS Client**: `@nats-io/nats.js` (current official JavaScript client)
 - **Transport**: WebSocket only (browser limitation)
+- **Communication**: NATS subjects exclusively—no REST/GraphQL fallbacks
 - **Credential Storage**: Browser secure storage APIs (IndexedDB, Web Crypto API)
 - **Minimum Browser Support**: Modern evergreen browsers with WebSocket and Web Crypto support
 - **Build Target**: ES2020+ for async/await and modern JavaScript features
@@ -142,4 +149,4 @@ All features, pull requests, and architectural decisions MUST comply with these 
 - **Exceptions**: Violations MUST be documented in a Complexity Tracking table with
   justification and explanation of why simpler alternatives were rejected
 
-**Version**: 1.0.0 | **Ratified**: 2026-01-12 | **Last Amended**: 2026-01-12
+**Version**: 1.1.0 | **Ratified**: 2026-01-12 | **Last Amended**: 2026-01-12
