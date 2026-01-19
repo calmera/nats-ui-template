@@ -12,8 +12,15 @@ import type { Credential, ConnectionError } from "@/types";
  */
 export function AuthPage() {
   const navigate = useNavigate();
-  const { state, derived, loadCredential, loadCredentialError, setConnecting, setConnected, setFailed } =
-    useAuthContext();
+  const {
+    state,
+    derived,
+    loadCredential,
+    loadCredentialError,
+    setConnecting,
+    setConnected,
+    setFailed,
+  } = useAuthContext();
   const [connectionError, setConnectionError] = useState<ConnectionError | null>(null);
 
   // Get NATS server URL from environment
@@ -53,11 +60,11 @@ export function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Connect to NATS</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-2xl font-bold text-foreground">Connect to NATS</h1>
+          <p className="mt-2 text-muted-foreground">
             Upload your .creds file to authenticate and connect to the NATS server.
           </p>
         </div>
@@ -69,23 +76,23 @@ export function AuthPage() {
         />
 
         {derived.isLoading && state.connection.status === "connecting" && (
-          <LoadingSpinner
-            size="sm"
-            text="Connecting to NATS server..."
-            className="mt-4"
-          />
+          <LoadingSpinner size="sm" text="Connecting to NATS server..." className="mt-4" />
         )}
 
         {connectionError && state.connection.status === "failed" && (
-          <div className="mt-4 rounded-md bg-red-50 p-4" role="alert">
-            <h3 className="text-sm font-medium text-red-800">Connection Failed</h3>
-            <p className="mt-1 text-sm text-red-700">{connectionError.userMessage}</p>
+          <div
+            className="mt-4 rounded-md bg-destructive/10 p-4 border border-destructive/20"
+            role="alert"
+          >
+            <h3 className="text-sm font-medium text-destructive">Connection Failed</h3>
+            <p className="mt-1 text-sm text-destructive/80">{connectionError.userMessage}</p>
           </div>
         )}
 
         <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
-            Connecting to: <code className="rounded bg-gray-100 px-1 py-0.5">{serverUrl}</code>
+          <p className="text-xs text-muted-foreground">
+            Connecting to:{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-foreground">{serverUrl}</code>
           </p>
         </div>
       </div>

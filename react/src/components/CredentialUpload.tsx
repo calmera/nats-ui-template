@@ -103,15 +103,15 @@ export function CredentialUpload({ onCredentialLoaded, onError, disabled }: Cred
           relative flex flex-col items-center justify-center
           rounded-lg border-2 border-dashed p-8
           transition-colors duration-200
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background
           ${
             disabled
-              ? "cursor-not-allowed border-gray-200 bg-gray-50"
+              ? "cursor-not-allowed border-border bg-muted/50"
               : isDragging
-                ? "cursor-copy border-blue-500 bg-blue-50"
-                : "cursor-pointer border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50"
+                ? "cursor-copy border-primary bg-primary/10"
+                : "cursor-pointer border-border bg-card hover:border-muted-foreground hover:bg-muted/50"
           }
-          ${error ? "border-red-300" : ""}
+          ${error ? "border-destructive" : ""}
         `}
         aria-label="Upload credential file"
         aria-disabled={disabled}
@@ -131,7 +131,7 @@ export function CredentialUpload({ onCredentialLoaded, onError, disabled }: Cred
         ) : (
           <>
             <svg
-              className={`mb-3 h-10 w-10 ${disabled ? "text-gray-300" : "text-gray-400"}`}
+              className={`mb-3 h-10 w-10 ${disabled ? "text-muted-foreground/50" : "text-muted-foreground"}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -144,16 +144,21 @@ export function CredentialUpload({ onCredentialLoaded, onError, disabled }: Cred
                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
               />
             </svg>
-            <p className={`text-sm ${disabled ? "text-gray-400" : "text-gray-600"}`}>
+            <p
+              className={`text-sm ${disabled ? "text-muted-foreground/50" : "text-muted-foreground"}`}
+            >
               {isDragging ? (
-                <span className="font-medium text-blue-600">Drop your .creds file here</span>
+                <span className="font-medium text-primary">Drop your .creds file here</span>
               ) : (
                 <>
-                  <span className="font-medium">Click to upload</span> or drag and drop
+                  <span className="font-medium text-foreground">Click to upload</span> or drag and
+                  drop
                 </>
               )}
             </p>
-            <p className={`mt-1 text-xs ${disabled ? "text-gray-300" : "text-gray-500"}`}>
+            <p
+              className={`mt-1 text-xs ${disabled ? "text-muted-foreground/30" : "text-muted-foreground"}`}
+            >
               .creds file only
             </p>
           </>
@@ -162,7 +167,7 @@ export function CredentialUpload({ onCredentialLoaded, onError, disabled }: Cred
 
       {error && (
         <div
-          className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700"
+          className="mt-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20"
           role="alert"
           aria-live="polite"
         >

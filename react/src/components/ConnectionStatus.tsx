@@ -44,7 +44,7 @@ export function ConnectionStatus({ status, className = "" }: ConnectionStatusPro
         )}
         <span className={`relative inline-flex h-3 w-3 rounded-full ${config.color}`} />
       </span>
-      <span className="text-sm text-gray-600">{config.text}</span>
+      <span className="text-sm text-muted-foreground">{config.text}</span>
     </div>
   );
 }

@@ -8,14 +8,14 @@ export function HomePage() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl">
             <span className="block">NATS Auth</span>
-            <span className="block text-blue-600">Boilerplate</span>
+            <span className="block text-primary">Boilerplate</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-lg text-xl text-gray-500">
+          <p className="mx-auto mt-6 max-w-lg text-xl text-muted-foreground">
             A React boilerplate with secure NATS credential-based authentication. Connect to your
             NATS server using .creds files with WebSocket transport.
           </p>
@@ -23,14 +23,14 @@ export function HomePage() {
             {isAuthenticated ? (
               <Link
                 to="/dashboard"
-                className="inline-flex items-center rounded-md bg-blue-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="inline-flex items-center rounded-md bg-primary px-6 py-3 text-base font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
               >
                 Go to Dashboard
               </Link>
             ) : (
               <Link
                 to="/auth"
-                className="inline-flex items-center rounded-md bg-blue-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="inline-flex items-center rounded-md bg-primary px-6 py-3 text-base font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
               >
                 Connect with NATS
               </Link>
@@ -113,12 +113,12 @@ interface FeatureCardProps {
 
 function FeatureCard({ title, description, icon }: FeatureCardProps) {
   return (
-    <div className="rounded-lg bg-white p-6 shadow-sm">
-      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-blue-100 text-blue-600">
+    <div className="rounded-lg bg-card p-6 shadow-sm border border-border">
+      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary">
         {icon}
       </div>
-      <h3 className="mt-4 text-lg font-medium text-gray-900">{title}</h3>
-      <p className="mt-2 text-gray-500">{description}</p>
+      <h3 className="mt-4 text-lg font-medium text-card-foreground">{title}</h3>
+      <p className="mt-2 text-muted-foreground">{description}</p>
     </div>
   );
 }
