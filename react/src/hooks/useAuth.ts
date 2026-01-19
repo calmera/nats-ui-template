@@ -1,7 +1,11 @@
 import { useCallback } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { getNatsService } from "@/services/nats/connection";
-import { parseCredentialFile, parseCredentials, getCredentialBytes } from "@/services/credentials/parser";
+import {
+  parseCredentialFile,
+  parseCredentials,
+  getCredentialBytes,
+} from "@/services/credentials/parser";
 import { getCredentialStorage } from "@/services/credentials/storage";
 import type { ConnectionError, Credential } from "@/types";
 

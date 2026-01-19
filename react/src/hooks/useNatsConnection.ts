@@ -50,7 +50,14 @@ export function useNatsConnection() {
     });
 
     return unsubscribe;
-  }, [state.connection.serverUrl, state.connection.status, setConnected, setReconnecting, setDisconnected, setFailed]);
+  }, [
+    state.connection.serverUrl,
+    state.connection.status,
+    setConnected,
+    setReconnecting,
+    setDisconnected,
+    setFailed,
+  ]);
 
   /**
    * Get the current connection status

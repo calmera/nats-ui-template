@@ -259,9 +259,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       };
 
-      const unsubscribe = tabSync.subscribe(
-        handleTabMessage as (message: unknown) => void
-      );
+      const unsubscribe = tabSync.subscribe(handleTabMessage as (message: unknown) => void);
       return unsubscribe;
     });
   }, [state.tabId]);
