@@ -5,6 +5,7 @@ Auto-generated from all feature plans. Last updated: 2026-01-12
 ## Active Technologies
 - TypeScript 5.9.3 with React 19.2.0 + @nats-io/nats-core ^3.3.0, @nats-io/nkeys ^2.0.3, react-router-dom ^7.12.0, Tailwind CSS 4.1.18 (002-event-driven-state)
 - IndexedDB for materialized state and credential storage (with Web Crypto API encryption) (002-event-driven-state)
+- Markdown with embedded Mermaid diagrams + N/A (documentation only) (001-developer-docs)
 
 - TypeScript 5.x with React 18.x (001-react-auth-boilerplate)
 
@@ -25,6 +26,7 @@ npm test && npm run lint
 TypeScript 5.x with React 18.x: Follow standard conventions
 
 ## Recent Changes
+- 001-developer-docs: Added Markdown with embedded Mermaid diagrams + N/A (documentation only)
 - 002-event-driven-state: Added TypeScript 5.9.3 with React 19.2.0 + @nats-io/nats-core ^3.3.0, @nats-io/nkeys ^2.0.3, react-router-dom ^7.12.0, Tailwind CSS 4.1.18
 
 - 001-react-auth-boilerplate: Added TypeScript 5.x with React 18.x
