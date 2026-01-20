@@ -7,9 +7,9 @@
  */
 
 import type { NatsConnection, Subscription } from "@nats-io/nats-core";
-import type { AppEvent, GetStateResponse } from "../../types/events";
+import type { AppEvent, GetStateResponse, NatsUserInfoResponse } from "../../types/events";
 import { NATS_DEFAULTS } from "../../types/state";
-import { createSubjects, getNamespace } from "../../utils/subjects";
+import { createSubjects, getNamespace, NATS_SYSTEM_SUBJECTS } from "../../utils/subjects";
 import { isValidEvent } from "../state/reducer";
 import { getNatsService } from "./connection";
 
@@ -93,24 +93,41 @@ class NatsEventService implements EventService {
   }
 
   /**
-   * Fetch the initial state from the backend.
+   * Fetch the initial state using $SYS.REQ.USER.INFO.
+   *
+   * This uses the built-in NATS system endpoint to get server and user information,
+   * creating a self-contained demo that works without a backend service.
    */
   async fetchInitialState(): Promise<GetStateResponse> {
     const connection = this.getConnection();
 
     try {
-      const response = await connection.request(this.subjects.state.get, this.codec.encode({}), {
-        timeout: this.stateTimeoutMs,
-      });
+      const response = await connection.request(
+        NATS_SYSTEM_SUBJECTS.userInfo,
+        new Uint8Array(),
+        { timeout: this.stateTimeoutMs }
+      );
 
-      const data = this.codec.decode(response.data) as GetStateResponse;
-      return data;
+      const info = this.codec.decode(response.data) as NatsUserInfoResponse;
+
+      return {
+        user: {
+          id: info.data.user,
+          email: `${info.data.user.slice(0, 8)}...@nats`,
+          name: info.server.name,
+          account: info.data.account,
+          server: info.server.name,
+          cluster: info.server.cluster,
+          jetstream: info.server.jetstream,
+          updatedAt: Date.now(),
+        },
+        sessions: [],
+        notifications: [],
+        serverTime: new Date(info.server.time).getTime(),
+      };
     } catch (error) {
-      if (error instanceof Error && error.message.includes("503")) {
-        throw new Error("State service unavailable");
-      }
       if (error instanceof Error && error.message.includes("timeout")) {
-        throw new Error("State request timed out");
+        throw new Error("NATS server not responding");
       }
       throw error;
     }

@@ -15,7 +15,32 @@ export interface User {
   email: string;
   name: string;
   avatarUrl?: string;
+  account?: string; // Account NKey
+  server?: string; // Server name
+  cluster?: string; // Cluster name
+  jetstream?: boolean; // JetStream enabled
   updatedAt: number;
+}
+
+/** Response from $SYS.REQ.USER.INFO */
+export interface NatsUserInfoResponse {
+  server: {
+    name: string;
+    host: string;
+    id: string;
+    cluster: string;
+    domain: string;
+    ver: string;
+    tags: string[];
+    jetstream: boolean;
+    flags: number;
+    seq: number;
+    time: string;
+  };
+  data: {
+    user: string;
+    account: string;
+  };
 }
 
 export interface Session {

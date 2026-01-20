@@ -56,6 +56,11 @@ export type NatsSubjects = ReturnType<typeof createSubjects>;
 /** Default namespace for NATS subjects */
 export const DEFAULT_NAMESPACE = "app";
 
+/** NATS system subjects for built-in endpoints */
+export const NATS_SYSTEM_SUBJECTS = {
+  userInfo: "$SYS.REQ.USER.INFO",
+} as const;
+
 /**
  * Gets the namespace from environment or uses default.
  */
