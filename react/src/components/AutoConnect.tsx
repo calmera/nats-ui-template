@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
@@ -8,50 +8,51 @@ interface AutoConnectProps {
 
 /**
  * Component that attempts to auto-connect using stored credentials on app load
+ *
+ * Uses a ref-based approach to handle React 18 Strict Mode's double-mount behavior.
+ * The ref is never reset, so Strict Mode's second mount skips the effect entirely.
  */
 export function AutoConnect({ children }: AutoConnectProps) {
-  const { authenticateWithStoredCredentials, hasStoredCredentials, isAuthenticated } = useAuth();
-  const [isChecking, setIsChecking] = useState(true);
+  const {
+    authenticateWithStoredCredentials,
+    hasStoredCredentials,
+    authCheckComplete,
+    setAuthCheckComplete,
+  } = useAuth();
+
+  // Track if we've run - never reset this ref (survives Strict Mode)
+  const hasRun = useRef(false);
 
   useEffect(() => {
-    let mounted = true;
+    if (hasRun.current) return;
+    hasRun.current = true;
 
-    async function attemptAutoConnect() {
+    async function checkAndConnect() {
       try {
-        // Check if we have stored credentials
         const hasStored = await hasStoredCredentials();
+        console.debug("[AutoConnect] Has stored credentials:", hasStored);
 
-        if (!hasStored) {
-          if (mounted) setIsChecking(false);
-          return;
+        if (hasStored) {
+          console.debug("[AutoConnect] Attempting to connect with stored credentials");
+          const success = await authenticateWithStoredCredentials();
+          console.debug("[AutoConnect] Connection result:", success);
         }
-
-        // Attempt to connect with stored credentials
-        await authenticateWithStoredCredentials();
-      } catch {
-        // Silently fail - user will need to re-authenticate
+      } catch (error) {
+        console.error("[AutoConnect] Error:", error);
       } finally {
-        if (mounted) setIsChecking(false);
+        // Always mark auth check as complete, regardless of outcome
+        setAuthCheckComplete();
       }
     }
 
-    // Only attempt auto-connect if not already authenticated
-    if (!isAuthenticated) {
-      attemptAutoConnect();
-    } else {
-      setIsChecking(false);
-    }
+    checkAndConnect();
+  }, [authenticateWithStoredCredentials, hasStoredCredentials, setAuthCheckComplete]);
 
-    return () => {
-      mounted = false;
-    };
-  }, [authenticateWithStoredCredentials, hasStoredCredentials, isAuthenticated]);
-
-  // Show loading state while checking for stored credentials
-  if (isChecking) {
+  // Show loading state while checking credentials
+  if (!authCheckComplete) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <LoadingSpinner size="md" text="Checking for stored credentials..." />
+        <LoadingSpinner size="md" text="Checking credentials..." />
       </div>
     );
   }

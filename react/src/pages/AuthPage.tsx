@@ -1,85 +1,80 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CredentialUpload } from "@/components/CredentialUpload";
+import { UserPassLogin } from "@/components/UserPassLogin";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { useAuthContext } from "@/contexts/AuthContext";
-import { getNatsService } from "@/services/nats/connection";
-import { getCredentialBytes } from "@/services/credentials/parser";
-import type { Credential, ConnectionError } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
+import { getAuthType } from "@/config/auth";
+import type { Credential } from "@/types";
 
 /**
- * Authentication page with credential upload
+ * Authentication page with credential upload or username/password login
  */
 export function AuthPage() {
   const navigate = useNavigate();
   const {
-    state,
-    derived,
-    loadCredential,
-    loadCredentialError,
-    setConnecting,
-    setConnected,
-    setFailed,
-  } = useAuthContext();
-  const [connectionError, setConnectionError] = useState<ConnectionError | null>(null);
+    connectionStatus,
+    connectionError,
+    isAuthenticated,
+    isLoading,
+    authenticateWithCredential,
+  } = useAuth();
 
-  // Get NATS server URL from environment
+  // Get configuration from environment
   const serverUrl = import.meta.env.VITE_NATS_URL || "wss://localhost:9443";
+  const authType = getAuthType();
 
   // Redirect if already connected
   useEffect(() => {
-    if (derived.isAuthenticated) {
+    if (isAuthenticated) {
       navigate("/dashboard");
     }
-  }, [derived.isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate]);
 
   const handleCredentialLoaded = async (credential: Credential) => {
-    loadCredential(credential);
-    setConnectionError(null);
-
-    // Attempt to connect to NATS
-    setConnecting();
-
-    try {
-      const natsService = getNatsService();
-      const credsBytes = getCredentialBytes(credential);
-      await natsService.connect(credsBytes, serverUrl);
-
-      setConnected(serverUrl);
+    const success = await authenticateWithCredential(credential, serverUrl);
+    if (success) {
       navigate("/dashboard");
-    } catch (error) {
-      const connError = error as ConnectionError;
-      setFailed(connError);
-      setConnectionError(connError);
     }
   };
 
-  const handleCredentialError = (error: ConnectionError) => {
-    loadCredentialError(error);
-    setConnectionError(error);
-  };
+  // Error handling is managed by the useAuth hook
+  // The connectionError state from the hook will be displayed
+  const handleCredentialError = () => {};
+
+  // Description text based on auth type
+  const descriptionText =
+    authType === "userpass"
+      ? "Enter your username and password to authenticate and connect to the NATS server."
+      : "Upload your .creds file to authenticate and connect to the NATS server.";
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-foreground">Connect to NATS</h1>
-          <p className="mt-2 text-muted-foreground">
-            Upload your .creds file to authenticate and connect to the NATS server.
-          </p>
+          <p className="mt-2 text-muted-foreground">{descriptionText}</p>
         </div>
 
-        <CredentialUpload
-          onCredentialLoaded={handleCredentialLoaded}
-          onError={handleCredentialError}
-          disabled={derived.isLoading}
-        />
+        {authType === "userpass" ? (
+          <UserPassLogin
+            onSubmit={handleCredentialLoaded}
+            onError={handleCredentialError}
+            disabled={isLoading}
+          />
+        ) : (
+          <CredentialUpload
+            onCredentialLoaded={handleCredentialLoaded}
+            onError={handleCredentialError}
+            disabled={isLoading}
+          />
+        )}
 
-        {derived.isLoading && state.connection.status === "connecting" && (
+        {isLoading && connectionStatus === "connecting" && (
           <LoadingSpinner size="sm" text="Connecting to NATS server..." className="mt-4" />
         )}
 
-        {connectionError && state.connection.status === "failed" && (
+        {connectionError && connectionStatus === "failed" && (
           <div
             className="mt-4 rounded-md bg-destructive/10 p-4 border border-destructive/20"
             role="alert"

@@ -1,5 +1,5 @@
 import type { NatsConnection } from "@nats-io/nats-core";
-import type { ConnectionStatus, ConnectionError } from "@/types";
+import type { ConnectionStatus, ConnectionError, Credential } from "@/types";
 
 /**
  * Connection event types emitted by the NATS service
@@ -39,7 +39,7 @@ export interface INatsService {
   readonly connection: NatsConnection | null;
 
   /** Connect to NATS server */
-  connect(credsBytes: Uint8Array, serverUrl: string): Promise<void>;
+  connect(credential: Credential, serverUrl: string): Promise<void>;
 
   /** Disconnect from NATS server */
   disconnect(): Promise<void>;

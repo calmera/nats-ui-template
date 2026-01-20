@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAppState } from "@/hooks/useAppState";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { StateIndicator } from "@/components/StateIndicator";
+import { isCredsFileCredential } from "@/types";
 import type { Notification, Session } from "@/types/events";
 
 /**
@@ -82,16 +83,40 @@ export function DashboardPage() {
             <h2 className="text-lg font-medium text-card-foreground">Credential Info</h2>
             <div className="mt-4 space-y-3">
               <InfoRow
-                label="Public Key"
+                label="Auth Type"
                 value={
-                  <code className="rounded bg-muted px-2 py-1 text-xs">
-                    {credential?.publicKey?.slice(0, 20)}...
-                  </code>
+                  credential?.authType === "userpass" ? "Username/Password" : "Credential File"
                 }
               />
+              {credential && isCredsFileCredential(credential) && (
+                <InfoRow
+                  label="Public Key"
+                  value={
+                    <code className="rounded bg-muted px-2 py-1 text-xs">
+                      {credential.publicKey.slice(0, 20)}...
+                    </code>
+                  }
+                />
+              )}
+              {credential?.authType === "userpass" && (
+                <InfoRow
+                  label="Username"
+                  value={
+                    <code className="rounded bg-muted px-2 py-1 text-xs">
+                      {credential.username}
+                    </code>
+                  }
+                />
+              )}
               <InfoRow
                 label="Source"
-                value={credential?.source === "storage" ? "Stored credential" : "File upload"}
+                value={
+                  credential?.source === "storage"
+                    ? "Stored credential"
+                    : credential?.source === "form"
+                      ? "Login form"
+                      : "File upload"
+                }
               />
               <InfoRow
                 label="Loaded"

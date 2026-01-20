@@ -1,7 +1,9 @@
-import { wsconnect, credsAuthenticator } from "@nats-io/nats-core";
-import type { NatsConnection, Status } from "@nats-io/nats-core";
-import type { ConnectionStatus } from "@/types";
+import { wsconnect, credsAuthenticator, usernamePasswordAuthenticator } from "@nats-io/nats-core";
+import type { NatsConnection, Status, Authenticator } from "@nats-io/nats-core";
+import type { ConnectionStatus, Credential } from "@/types";
+import { isCredsFileCredential } from "@/types";
 import { createConnectionError, createErrorFromUnknown } from "@/utils/errors";
+import { getCredentialBytes } from "@/services/credentials/parser";
 import type { INatsService, NatsEventCallback, NatsEvent, NatsServiceConfig } from "./types";
 import { DEFAULT_NATS_CONFIG } from "./types";
 
@@ -15,6 +17,7 @@ class NatsService implements INatsService {
   private _eventListeners: Set<NatsEventCallback> = new Set();
   private _statusIteratorAbort: AbortController | null = null;
   private _config: Required<NatsServiceConfig>;
+  private _connectionPromise: Promise<void> | null = null;
 
   constructor(config: NatsServiceConfig = {}) {
     this._config = { ...DEFAULT_NATS_CONFIG, ...config };
@@ -35,12 +38,32 @@ class NatsService implements INatsService {
   /**
    * Connect to NATS server with credentials
    */
-  async connect(credsBytes: Uint8Array, serverUrl: string): Promise<void> {
+  async connect(credential: Credential, serverUrl: string): Promise<void> {
     // Don't reconnect if already connected to same server
     if (this._status === "connected" && this._connection) {
       return;
     }
 
+    // If a connection is already in progress, return the existing promise
+    // This prevents race conditions from React Strict Mode double-mounting
+    if (this._connectionPromise) {
+      return this._connectionPromise;
+    }
+
+    // Start the connection and store the promise
+    this._connectionPromise = this._doConnect(credential, serverUrl);
+
+    try {
+      await this._connectionPromise;
+    } finally {
+      this._connectionPromise = null;
+    }
+  }
+
+  /**
+   * Internal connection logic
+   */
+  private async _doConnect(credential: Credential, serverUrl: string): Promise<void> {
     // Disconnect existing connection if any
     if (this._connection) {
       await this.disconnect();
@@ -49,10 +72,19 @@ class NatsService implements INatsService {
     this._setStatus("connecting");
     this._emitEvent({ type: "connecting", timestamp: Date.now() });
 
+    // Select authenticator based on credential type
+    let authenticator: Authenticator;
+    if (isCredsFileCredential(credential)) {
+      const credsBytes = getCredentialBytes(credential);
+      authenticator = credsAuthenticator(credsBytes);
+    } else {
+      authenticator = usernamePasswordAuthenticator(credential.username, credential.password);
+    }
+
     try {
       this._connection = await wsconnect({
         servers: serverUrl,
-        authenticator: credsAuthenticator(credsBytes),
+        authenticator,
         timeout: this._config.timeout,
         reconnect: this._config.reconnect,
         maxReconnectAttempts: this._config.maxReconnectAttempts,

@@ -11,21 +11,65 @@
 // =============================================================================
 
 /**
- * Parsed credential from a .creds file
+ * Authentication type discriminator
  */
-export interface Credential {
+export type AuthType = "credsfile" | "userpass";
+
+/**
+ * Base fields shared by all credential types
+ */
+interface BaseCredential {
   /** Unique identifier for this credential instance */
   id: string;
+  /** Timestamp when credential was loaded */
+  loadedAt: number;
+  /** Source of the credential */
+  source: "file" | "storage" | "form";
+}
+
+/**
+ * Credential file authentication (.creds file)
+ */
+export interface CredsFileCredential extends BaseCredential {
+  /** Authentication type discriminator */
+  authType: "credsfile";
   /** User JWT extracted from .creds file */
   jwt: string;
   /** NKey seed (private key material) - handle with care */
   seed: Uint8Array;
   /** Derived public key (starts with 'U' for user) */
   publicKey: string;
-  /** Timestamp when credential was loaded */
-  loadedAt: number;
-  /** Source of the credential */
-  source: "file" | "storage";
+}
+
+/**
+ * Username/password authentication
+ */
+export interface UserPassCredential extends BaseCredential {
+  /** Authentication type discriminator */
+  authType: "userpass";
+  /** Username for authentication */
+  username: string;
+  /** Password for authentication */
+  password: string;
+}
+
+/**
+ * Union type for all credential types
+ */
+export type Credential = CredsFileCredential | UserPassCredential;
+
+/**
+ * Type guard for credential file credentials
+ */
+export function isCredsFileCredential(cred: Credential): cred is CredsFileCredential {
+  return cred.authType === "credsfile";
+}
+
+/**
+ * Type guard for username/password credentials
+ */
+export function isUserPassCredential(cred: Credential): cred is UserPassCredential {
+  return cred.authType === "userpass";
 }
 
 /**
@@ -49,6 +93,8 @@ export interface StoredCredential {
   storedAt: number;
   /** Associated NATS server URL */
   serverUrl: string;
+  /** Authentication type used */
+  authType: AuthType;
 }
 
 // =============================================================================
@@ -145,6 +191,9 @@ export interface AuthState {
   // Connection state
   connection: Connection;
 
+  // Auth check state
+  authCheckComplete: boolean;
+
   // Sync metadata
   lastSyncTimestamp: number;
   tabId: string;
@@ -174,6 +223,7 @@ export type AuthAction =
   | { type: "SET_RECONNECTING"; payload: { attempt: number } }
   | { type: "SET_DISCONNECTED" }
   | { type: "SET_FAILED"; payload: ConnectionError }
+  | { type: "SET_AUTH_CHECK_COMPLETE" }
   | { type: "CLEAR_CREDENTIAL" }
   | { type: "SYNC_STATE"; payload: Partial<AuthState> };
 

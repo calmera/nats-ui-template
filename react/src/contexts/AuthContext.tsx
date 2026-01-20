@@ -40,6 +40,7 @@ const initialState: AuthState = {
   credential: null,
   credentialStatus: "not_loaded",
   connection: initialConnection,
+  authCheckComplete: false,
   lastSyncTimestamp: 0,
   tabId: generateTabId(),
 };
@@ -121,6 +122,9 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         },
       };
 
+    case "SET_AUTH_CHECK_COMPLETE":
+      return { ...state, authCheckComplete: true };
+
     case "SET_FAILED":
       return {
         ...state,
@@ -165,6 +169,7 @@ interface AuthContextValue {
   setReconnecting: (attempt: number) => void;
   setDisconnected: () => void;
   setFailed: (error: ConnectionError) => void;
+  setAuthCheckComplete: () => void;
   clearCredential: () => void;
 }
 
@@ -190,6 +195,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const derived: DerivedAuthState = {
     isAuthenticated: state.connection.status === "connected",
     isLoading:
+      !state.authCheckComplete ||
       state.credentialStatus === "loading" ||
       state.connection.status === "connecting" ||
       state.connection.status === "reconnecting",
@@ -224,6 +230,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const setFailed = useCallback((error: ConnectionError) => {
     dispatch({ type: "SET_FAILED", payload: error });
+  }, []);
+
+  const setAuthCheckComplete = useCallback(() => {
+    dispatch({ type: "SET_AUTH_CHECK_COMPLETE" });
   }, []);
 
   const clearCredential = useCallback(() => {
@@ -275,6 +285,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setReconnecting,
     setDisconnected,
     setFailed,
+    setAuthCheckComplete,
     clearCredential,
   };
 

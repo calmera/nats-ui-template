@@ -1,4 +1,12 @@
-import type { StoredCredential, CredentialStorageOptions } from "@/types";
+import type {
+  StoredCredential,
+  CredentialStorageOptions,
+  Credential,
+  CredsFileCredential,
+  UserPassCredential,
+  AuthType,
+} from "@/types";
+import { isCredsFileCredential } from "@/types";
 
 /**
  * Default storage options
@@ -167,23 +175,41 @@ class CredentialStorage {
   /**
    * Store a credential (T031)
    */
-  async storeCredential(
-    id: string,
-    credsContent: string,
-    serverUrl: string
-  ): Promise<StoredCredential> {
+  async storeCredential(credential: Credential, serverUrl: string): Promise<StoredCredential> {
     const db = await this.initDB();
     const password = await this.getDevicePassword();
 
-    const { encrypted, salt } = await this.encrypt(credsContent, password);
+    // Serialize credential data based on type
+    let dataToEncrypt: string;
+    let authType: AuthType;
+
+    if (isCredsFileCredential(credential)) {
+      authType = "credsfile";
+      dataToEncrypt = JSON.stringify({
+        type: "credsfile",
+        jwt: credential.jwt,
+        seed: Array.from(credential.seed),
+        publicKey: credential.publicKey,
+      });
+    } else {
+      authType = "userpass";
+      dataToEncrypt = JSON.stringify({
+        type: "userpass",
+        username: credential.username,
+        password: credential.password,
+      });
+    }
+
+    const { encrypted, salt } = await this.encrypt(dataToEncrypt, password);
 
     const storedCredential: StoredCredential = {
-      id,
+      id: credential.id,
       encrypted,
       salt,
       iterations: this.options.iterations,
       storedAt: Date.now(),
       serverUrl,
+      authType,
     };
 
     return new Promise((resolve, reject) => {
@@ -199,7 +225,7 @@ class CredentialStorage {
   /**
    * Retrieve and decrypt a stored credential (T032)
    */
-  async retrieveCredential(id: string): Promise<string | null> {
+  async retrieveCredential(id: string): Promise<Credential | null> {
     const db = await this.initDB();
 
     return new Promise((resolve, reject) => {
@@ -218,9 +244,36 @@ class CredentialStorage {
         try {
           const password = await this.getDevicePassword();
           const decrypted = await this.decrypt(stored.encrypted, stored.salt, password);
-          resolve(decrypted);
+          const data = JSON.parse(decrypted);
+
+          // Reconstruct credential based on type
+          if (data.type === "credsfile") {
+            const credential: CredsFileCredential = {
+              authType: "credsfile",
+              id: stored.id,
+              jwt: data.jwt,
+              seed: new Uint8Array(data.seed),
+              publicKey: data.publicKey,
+              loadedAt: Date.now(),
+              source: "storage",
+            };
+            resolve(credential);
+          } else if (data.type === "userpass") {
+            const credential: UserPassCredential = {
+              authType: "userpass",
+              id: stored.id,
+              username: data.username,
+              password: data.password,
+              loadedAt: Date.now(),
+              source: "storage",
+            };
+            resolve(credential);
+          } else {
+            // Unknown credential type
+            resolve(null);
+          }
         } catch {
-          // Decryption failed - credential may be corrupted or from different device
+          // Decryption or parsing failed - credential may be corrupted or from different device
           resolve(null);
         }
       };

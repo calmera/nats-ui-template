@@ -1,5 +1,5 @@
 import { fromSeed } from "@nats-io/nkeys";
-import type { Credential, ConnectionError } from "@/types";
+import type { CredsFileCredential, ConnectionError } from "@/types";
 import { createConnectionError } from "@/utils/errors";
 
 /**
@@ -29,7 +29,7 @@ const USER_PUBLIC_KEY_PREFIX = "U";
  */
 export interface ParseResult {
   success: true;
-  credential: Credential;
+  credential: CredsFileCredential;
 }
 
 /**
@@ -161,6 +161,7 @@ export function parseCredentials(credsText: string): ParseResult | ParseError {
   return {
     success: true,
     credential: {
+      authType: "credsfile",
       id: generateCredentialId(),
       jwt: sections.jwt,
       seed: keyData.seed,
@@ -209,7 +210,7 @@ export function isValidCredentialFormat(credsText: string): boolean {
 /**
  * Gets the raw credential bytes for use with NATS authenticator
  */
-export function getCredentialBytes(credential: Credential): Uint8Array {
+export function getCredentialBytes(credential: CredsFileCredential): Uint8Array {
   // Reconstruct the .creds format
   const credsContent = `-----BEGIN NATS USER JWT-----
 ${credential.jwt}

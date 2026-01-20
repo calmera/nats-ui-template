@@ -1,13 +1,9 @@
 import { useCallback } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { getNatsService } from "@/services/nats/connection";
-import {
-  parseCredentialFile,
-  parseCredentials,
-  getCredentialBytes,
-} from "@/services/credentials/parser";
+import { parseCredentialFile } from "@/services/credentials/parser";
 import { getCredentialStorage } from "@/services/credentials/storage";
-import type { ConnectionError, Credential } from "@/types";
+import type { Credential, ConnectionError } from "@/types";
 
 /**
  * Hook for authentication operations
@@ -21,22 +17,9 @@ export function useAuth() {
     setConnecting,
     setConnected,
     setFailed,
+    setAuthCheckComplete,
     clearCredential,
   } = useAuthContext();
-
-  /**
-   * Reconstruct credential content for storage
-   */
-  const reconstructCredsContent = (credential: Credential): string => {
-    return `-----BEGIN NATS USER JWT-----
-${credential.jwt}
-------END NATS USER JWT------
-
------BEGIN USER NKEY SEED-----
-${new TextDecoder().decode(credential.seed)}
-------END USER NKEY SEED------
-`;
-  };
 
   /**
    * Authenticate with a credential file
@@ -58,16 +41,14 @@ ${new TextDecoder().decode(credential.seed)}
 
       try {
         const natsService = getNatsService();
-        const credsBytes = getCredentialBytes(parseResult.credential);
-        await natsService.connect(credsBytes, serverUrl);
+        await natsService.connect(parseResult.credential, serverUrl);
 
         setConnected(serverUrl);
 
         // Persist credential for returning user authentication
         if (persistCredential) {
           const storage = getCredentialStorage();
-          const credsContent = reconstructCredsContent(parseResult.credential);
-          await storage.storeCredential(parseResult.credential.id, credsContent, serverUrl);
+          await storage.storeCredential(parseResult.credential, serverUrl);
         }
 
         return true;
@@ -78,6 +59,35 @@ ${new TextDecoder().decode(credential.seed)}
       }
     },
     [loadCredential, loadCredentialError, setConnecting, setConnected, setFailed]
+  );
+
+  /**
+   * Authenticate with an already-parsed credential
+   */
+  const authenticateWithCredential = useCallback(
+    async (credential: Credential, serverUrl: string, persistCredential = true): Promise<boolean> => {
+      loadCredential(credential);
+      setConnecting();
+
+      try {
+        const natsService = getNatsService();
+        await natsService.connect(credential, serverUrl);
+        setConnected(serverUrl);
+
+        // Persist credential for returning user authentication
+        if (persistCredential) {
+          const storage = getCredentialStorage();
+          await storage.storeCredential(credential, serverUrl);
+        }
+
+        return true;
+      } catch (error) {
+        const connError = error as ConnectionError;
+        setFailed(connError);
+        return false;
+      }
+    },
+    [loadCredential, setConnecting, setConnected, setFailed]
   );
 
   /**
@@ -93,26 +103,12 @@ ${new TextDecoder().decode(credential.seed)}
     }
 
     // Retrieve and decrypt credentials
-    const credsContent = await storage.retrieveCredential(meta.id);
-    if (!credsContent) {
+    const credential = await storage.retrieveCredential(meta.id);
+    if (!credential) {
       // Failed to decrypt - clear corrupted credential
       await storage.clearCredential(meta.id);
       return false;
     }
-
-    // Parse the decrypted credentials
-    const parseResult = parseCredentials(credsContent);
-    if (!parseResult.success) {
-      // Invalid credentials - clear
-      await storage.clearCredential(meta.id);
-      return false;
-    }
-
-    // Mark credential as loaded from storage
-    const credential: Credential = {
-      ...parseResult.credential,
-      source: "storage",
-    };
 
     loadCredential(credential);
 
@@ -121,8 +117,7 @@ ${new TextDecoder().decode(credential.seed)}
 
     try {
       const natsService = getNatsService();
-      const credsBytes = getCredentialBytes(credential);
-      await natsService.connect(credsBytes, meta.serverUrl);
+      await natsService.connect(credential, meta.serverUrl);
 
       setConnected(meta.serverUrl);
       return true;
@@ -167,6 +162,7 @@ ${new TextDecoder().decode(credential.seed)}
     connectionStatus: state.connection.status,
     connectionError: state.connection.lastError,
     serverUrl: state.connection.serverUrl,
+    authCheckComplete: state.authCheckComplete,
 
     // Derived state
     isAuthenticated: derived.isAuthenticated,
@@ -175,8 +171,10 @@ ${new TextDecoder().decode(credential.seed)}
 
     // Actions
     authenticateWithFile,
+    authenticateWithCredential,
     authenticateWithStoredCredentials,
     hasStoredCredentials,
     disconnect,
+    setAuthCheckComplete,
   };
 }

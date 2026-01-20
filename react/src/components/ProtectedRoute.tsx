@@ -8,27 +8,24 @@ import type { ProtectedRouteProps } from "@/types";
  */
 export function ProtectedRoute({ children, redirectTo = "/auth" }: ProtectedRouteProps) {
   const location = useLocation();
-  const { isAuthenticated, isLoading, connectionStatus } = useAuth();
+  const { isAuthenticated, authCheckComplete, connectionStatus } = useAuth();
 
-  // Show loading state while checking authentication
-  if (isLoading) {
+  // Still checking credentials - show loading
+  if (!authCheckComplete) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <LoadingSpinner
-          size="md"
-          text={connectionStatus === "reconnecting" ? "Reconnecting..." : "Loading..."}
-        />
+        <LoadingSpinner size="md" text="Loading..." />
       </div>
     );
   }
 
-  // Redirect to auth page if not authenticated
+  // Check complete, not authenticated - redirect
   if (!isAuthenticated) {
     // Save the attempted URL to redirect back after login
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // Show reconnecting state
+  // Authenticated - show content (with reconnecting overlay if needed)
   if (connectionStatus === "reconnecting") {
     return (
       <div className="relative">
